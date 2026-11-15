@@ -1,0 +1,206 @@
+﻿<!DOCTYPE html>
+<html lang="ru">
+	<head>
+		<meta charset="UTF-8">
+			<meta name="viewport" content="width=device-width, initial-scale=1.0">
+				<title>Дело о пустых стульях</title>
+				<script src="https://telegram.org"></script>
+				<style>
+					body {
+					font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+					background-color: #18191c;
+					color: #e4e6eb;
+					margin: 0;
+					padding: 16px;
+					display: flex;
+					flex-direction: column;
+					min-height: 90vh;
+					}
+					.card {
+					background: #242526;
+					border-radius: 16px;
+					padding: 18px;
+					box-shadow: 0 4px 15px rgba(0,0,0,0.4);
+					border: 1px solid #3a3b3c;
+					}
+					.scene-img {
+					width: 100%;
+					height: 180px;
+					object-fit: cover;
+					border-radius: 12px;
+					margin-bottom: 14px;
+					background-color: #18191c;
+					}
+					.badge {
+					display: inline-block;
+					background: #e63946;
+					color: #fff;
+					padding: 4px 10px;
+					border-radius: 8px;
+					font-size: 12px;
+					font-weight: bold;
+					margin-bottom: 10px;
+					text-transform: uppercase;
+					}
+					h2 { margin-top: 0; margin-bottom: 10px; font-size: 20px; color: #ffffff; }
+					p { line-height: 1.5; font-size: 15px; color: #b0b3b8; margin-top: 0; }
+					.btn {
+					display: block;
+					width: 100%;
+					background: #3a3b3c;
+					color: #ffffff;
+					border: 1px solid #4e4f50;
+					padding: 13px;
+					margin-top: 10px;
+					border-radius: 12px;
+					font-size: 14px;
+					text-align: left;
+					cursor: pointer;
+					transition: background 0.2s;
+					}
+					.btn:active { background: #4e4f50; }
+					.btn-primary {
+					background: #2d88ff;
+					border: none;
+					text-align: center;
+					font-weight: bold;
+					margin-top: 18px;
+					}
+					.feedback {
+					margin-top: 14px;
+					padding: 12px;
+					border-radius: 10px;
+					background: #2b3945;
+					color: #8ab4f8;
+					font-size: 14px;
+					display: none;
+					}
+				</style>
+			</head>
+	<body>
+
+		<div class="card" id="game-box">
+			<img src="cover.jpg" id="scene-img" class="scene-img" alt="Иллюстрация сцены">
+				<span class="badge" id="step-badge">Досье</span>
+				<h2 id="title">Дело о пустых стульях</h2>
+				<p id="text"></p>
+				<div id="options"></div>
+				<div class="feedback" id="feedback"></div>
+				<button class="btn btn-primary" id="next-btn" style="display:none;" onclick="nextScene()">Дальше</button>
+			</div>
+
+		<script>
+			const tg = window.Telegram.WebApp;
+			tg.expand();
+
+			const userName = tg.initDataUnsafe?.user?.first_name || "Детектив";
+			let score = 0;
+			let currentScene = -1;
+
+			const scenes = [
+			{
+			img: "scene1.jpg",
+			badge: "Улика 1 из 4 • Рынок труда",
+			title: "Призраки работных сайтов",
+			text: "В стране острый кадровый голод и низкая безработица, но у компании «Вектор» откликов в 5 раз меньше, чем у конкурентов. Вы открываете их вакансии. Что отпугивает людей еще до звонка?",
+			options: [
+			{ text: "Зарплата «по договоренности», а реальный оклад на 30% ниже рынка", correct: true, reply: "Верно! В условиях дефицита кадров соискатели игнорируют вакансии без прозрачной зарплатной вилки. (+1 улика)" },
+			{ text: "У компании скучный синий логотип в шапке профиля", correct: false, reply: "Мимо. Дизайн важен, но главная причина игнорирования вакансий — непрозрачные условия оплаты." },
+			{ text: "В офисе нет настольного футбола", correct: false, reply: "Неверно. Базовые финансовые условия и прозрачность всегда важнее офисных развлечений." }
+			]
+			},
+			{
+			img: "scene2.jpg",
+			badge: "Улика 2 из 4 • Проведение интервью",
+			title: "Запись из переговорной",
+			text: "Вы смотрите камеру видеонаблюдения: сильный кандидат уходит через 15 минут после начала встречи. Какую грубую ошибку совершил рекрутер компании?",
+			options: [
+			{ text: "Попросил рассказать о достижениях по методике STAR", correct: false, reply: "Это как раз профессиональный инструмент оценки компетенций. Проблема была в другом." },
+			{ text: "Опоздал на 20 минут, спрашивал про планы на детей и дал бесплатное тестовое на 4 дня", correct: true, reply: "Точно! Нарушение личных границ, неуважение ко времени и объемное бесплатное тестовое — главные красные флаги. (+1 улика)" },
+			{ text: "Предложил кандидату воду вместо кофе", correct: false, reply: "Такая мелочь не заставит мотивированного специалиста прервать встречу." }
+			]
+			},
+			{
+			img: "scene3.jpg",
+			badge: "Улика 3 из 4 • Барьеры найма",
+			title: "Папка «Отказы»",
+			text: "Десятки резюме опытных специалистов отправлены в корзину до собеседования. На полях пометка начальника отдела: «Старше 42 лет не берем, у нас молодой коллектив». В чем проблема?",
+			options: [
+			{ text: "Эйджизм (возрастная дискриминация) и шаблонные стереотипы", correct: true, reply: "В точку! В условиях демографической ямы отсекать опытных профи из-за возраста — кадровое самоубийство. (+1 улика)" },
+			{ text: "Сезонный спад активности кандидатов", correct: false, reply: "Резюме ведь уже прислали! Компания сама искусственно сузила воронку найма из-за эйджизма." }
+			]
+			},
+			{
+			img: "scene4.jpg",
+			badge: "Улика 4 из 4 • Ошибки соискателя",
+			title: "Неудачливый выпускник",
+			text: "В коридоре расстроенный кандидат жалуется, что ему отказали, хотя он молод и просил зарплату в рынке. Вы смотрите анкету оценки. Какое правило собеседования нарушил сам соискатель?",
+			options: [
+			{ text: "Уточнил в конце встречи задачи на испытательный срок", correct: false, reply: "Задавать встречные вопросы о задачах — это правило хорошего тона на интервью." },
+			{ text: "Не прочитал, чем занимается компания, и весь разговор ругал бывшего начальника", correct: true, reply: "Бинго! Отсутствие подготовки и негатив в адрес прошлых коллег моментально портят репутацию кандидата. (+1 улика)" }
+			]
+			}
+			];
+
+			document.getElementById("text").innerText = `${userName}, директор компании «Вектор» нанял вас для срочного расследования. Отделы пустуют полгода: кандидаты не откликаются или сбегают со встреч. Соберите все 4 улики и отправьте отчет в штаб!`;
+			document.getElementById("next-btn").style.display = "block";
+			document.getElementById("next-btn").innerText = "Начать расследование";
+
+			function nextScene() {
+			currentScene++;
+			document.getElementById("feedback").style.display = "none";
+			document.getElementById("next-btn").style.display = "none";
+
+			if (currentScene < scenes.length) {
+            const s = scenes[currentScene];
+            document.getElementById("scene-img").src = s.img;
+            document.getElementById("step-badge").innerText = s.badge;
+            document.getElementById("title").innerText = s.title;
+            document.getElementById("text").innerText = s.text;
+
+            const optsDiv = document.getElementById("options");
+            optsDiv.innerHTML = "";
+            s.options.forEach(opt => {
+                const btn = document.createElement("button");
+                btn.className = "btn";
+                btn.innerText = opt.text;
+                btn.onclick = () => selectOption(opt);
+                optsDiv.appendChild(btn);
+            });
+        } else {
+            finishGame();
+        }
+    }
+
+    function selectOption(opt) {
+        if (opt.correct) score++;
+        const buttons = document.querySelectorAll("#options .btn");
+        buttons.forEach(b => b.disabled = true);
+
+        const fb = document.getElementById("feedback");
+        fb.innerText = opt.reply;
+        fb.style.display = "block";
+
+        const nextBtn = document.getElementById("next-btn");
+        nextBtn.innerText = currentScene === scenes.length - 1 ? "К итогам дела" : "Следующая улика";
+        nextBtn.style.display = "block";
+    }
+
+    function finishGame() {
+        document.getElementById("scene-img").src = "cover.jpg";
+        document.getElementById("step-badge").innerText = "Дело закрыто";
+        document.getElementById("title").innerText = `Собрано улик: ${score} из ${scenes.length}`;
+        document.getElementById("text").innerText = "Нажмите кнопку ниже, чтобы передать материалы расследования директору и получить официальное заключение в чате Telegram.";
+        document.getElementById("options").innerHTML = "";
+
+        const sendBtn = document.createElement("button");
+        sendBtn.className = "btn btn-primary";
+        sendBtn.innerText = "Отправить отчет в чат";
+        sendBtn.onclick = () => {
+            tg.sendData(JSON.stringify({ score: score, total: scenes.length }));
+        };
+        document.getElementById("options").appendChild(sendBtn);
+    }
+		</script>
+	</body>
+</html>
